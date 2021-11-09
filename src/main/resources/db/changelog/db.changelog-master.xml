@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
+    <changeSet id="202111081414" author="Olga Rogova">
+        <createTable tableName="test">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" primaryKeyName="test_id_pk" />
+            </column>
+            <column name="owner" type="varchar(250)">
+                <constraints unique="true" uniqueConstraintName="test_owner_unq" />
+            </column>
+            <column name="fully_tested" type="boolean" defaultValueBoolean="false"/>
+        </createTable>
+        <addAutoIncrement tableName="test" columnName="id" columnDataType="bigint" startWith="1" incrementBy="1" />
+        <createSequence sequenceName="hibernate_sequence" incrementBy="1" startValue="1" />
+    </changeSet>
+</databaseChangeLog>

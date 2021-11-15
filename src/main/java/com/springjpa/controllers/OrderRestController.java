@@ -1,11 +1,11 @@
 package com.springjpa.controllers;
 
-import com.springjpa.entity.Order;
+import com.springjpa.entity.OrderEntity;
+import com.springjpa.exceptions.InternalServerErrorException;
+import com.springjpa.exceptions.ResourceNotFoundException;
 import com.springjpa.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,83 +14,89 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
-@CrossOrigin(origins = "http://localhost:8081")
 @RestController
 @RequestMapping("/orders")
 public class OrderRestController {
+
+    private final OrderRepository orderRepository;
+
     @Autowired
-    OrderRepository orderRepository;
+    public OrderRestController(OrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
+    }
 
     @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders(@RequestParam(required = false) String orderNumber) {
-        try{
-            List<Order> orders = new ArrayList<>();
+    public List<OrderEntity> getAllOrders(@RequestParam(required = false) String orderNumber){
+
+        try {
+            List<OrderEntity> orderEntities = new ArrayList<>();
 
             if (orderNumber == null){
-                orders.addAll(orderRepository.findAll());
+                orderEntities.addAll(orderRepository.findAll());
             } else {
-                orders.addAll(orderRepository.findAllByOrderNumber(orderNumber));
+                orderEntities.addAll(orderRepository.findAllByOrderNumber(orderNumber));
             }
 
-            if (orders.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            if (orderEntities.isEmpty()) {
+                throw new ResourceNotFoundException("Order not found");
             }
-
-            return new ResponseEntity<>(orders, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return orderEntities;
+        } catch (InternalServerErrorException e){
+            throw new InternalServerErrorException("Could not get orders");
         }
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<Order> getOrderById(@PathVariable("orderId") int orderId) {
-        Optional<Order> orderData = orderRepository.findById(orderId);
-
-        return orderData.map(order -> new ResponseEntity<>(order, HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public Optional<OrderEntity> getOrderById(@PathVariable("orderId") int orderId) {
+        Optional<OrderEntity> orderData = orderRepository.findById(orderId);
+        if (orderData.isEmpty()){
+            throw new ResourceNotFoundException("Order not found");
+        }
+        return orderData;
     }
 
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody Order order) {
+    public OrderEntity createOrder(@RequestBody OrderEntity orderEntity) {
         try {
-            Order newOrder = orderRepository
-                    .save(new Order(order.getOrderNumber(), order.getCustomer(), order.getOrderDate(), order.getTotalAmount(), order.getOrderProducts()));
-            return new ResponseEntity<>(newOrder, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return orderRepository
+                    .save(new OrderEntity(orderEntity.getOrderNumber(), orderEntity.getCustomer(), orderEntity.getOrderDate(), orderEntity.getTotalAmount(), orderEntity.getOrderProducts()));
+        } catch (InternalServerErrorException e) {
+            throw new InternalServerErrorException("Could not create order");
         }
     }
 
     @PutMapping("/{orderId}")
-    public ResponseEntity<Order> updateOrder(@PathVariable("orderId") int orderId, @RequestBody Order updatedOrder) {
-        Optional<Order> orderData = orderRepository.findById(orderId);
+    public OrderEntity updateOrder(@PathVariable("orderId") int orderId, @RequestBody OrderEntity updatedOrderEntity) {
+        Optional<OrderEntity> orderData = orderRepository.findById(orderId);
 
         if (orderData.isPresent()) {
-            Order order = orderData.get();
-            order.setOrderNumber(updatedOrder.getOrderNumber());
-            order.setCustomer(updatedOrder.getCustomer());
-            order.setOrderDate(updatedOrder.getOrderDate());
-            order.setTotalAmount(updatedOrder.getTotalAmount());
-            order.setOrderProducts(updatedOrder.getOrderProducts());
-            return new ResponseEntity<>(orderRepository.save(order), HttpStatus.OK);
+            OrderEntity orderEntity = orderData.get();
+            orderEntity.setOrderNumber(updatedOrderEntity.getOrderNumber());
+            orderEntity.setCustomer(updatedOrderEntity.getCustomer());
+            orderEntity.setOrderDate(updatedOrderEntity.getOrderDate());
+            orderEntity.setTotalAmount(updatedOrderEntity.getTotalAmount());
+            orderEntity.setOrderProducts(updatedOrderEntity.getOrderProducts());
+            return orderEntity;
         } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            throw new ResourceNotFoundException("Order not found");
         }
     }
 
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{orderId}")
-    public ResponseEntity<HttpStatus> deleteCustomer(@PathVariable("orderId") int orderId) {
+    public void deleteOrder(@PathVariable("orderId") int orderId) {
         try {
             orderRepository.deleteById(orderId);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new InternalServerErrorException("Could not delete order");
         }
     }
 }

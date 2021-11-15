@@ -1,11 +1,11 @@
 package com.springjpa.controllers;
 
-import com.springjpa.entity.Supplier;
+import com.springjpa.entity.SupplierEntity;
+import com.springjpa.exceptions.InternalServerErrorException;
+import com.springjpa.exceptions.ResourceNotFoundException;
 import com.springjpa.repository.SupplierRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,79 +14,87 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-@CrossOrigin(origins = "http://localhost:8081")
 @RestController
 @RequestMapping("/suppliers")
 public class SupplierRestController {
+
+    private final SupplierRepository supplierRepository;
+
     @Autowired
-    SupplierRepository supplierRepository;
+    public SupplierRestController(SupplierRepository supplierRepository) {
+        this.supplierRepository = supplierRepository;
+    }
 
     @GetMapping
-    public ResponseEntity<List<Supplier>> getAllSuppliers(@RequestParam(required = false) String supplierName) {
-        try{
-            List<Supplier> suppliers = new ArrayList<>();
+    public List<SupplierEntity> getAllSuppliers(@RequestParam(required = false) String supplierName){
+
+        try {
+            List<SupplierEntity> supplierEntities = new ArrayList<>();
 
             if (supplierName == null){
-                suppliers.addAll(supplierRepository.findAll());
+                supplierEntities.addAll(supplierRepository.findAll());
             } else {
-                suppliers.addAll(supplierRepository.findAllBySupplierName(supplierName));
+                supplierEntities.addAll(supplierRepository.findAllBySupplierName(supplierName));
             }
 
-            if (suppliers.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            if (supplierEntities.isEmpty()) {
+                throw new ResourceNotFoundException("Supplier not found");
             }
-
-            return new ResponseEntity<>(suppliers, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return supplierEntities;
+        } catch (InternalServerErrorException e){
+            throw new InternalServerErrorException("Could not get suppliers");
         }
     }
 
     @GetMapping("/{supplierId}")
-    public ResponseEntity<Supplier> getSupplierById(@PathVariable("supplierId") int supplierId) {
-        Optional<Supplier> supplierData = supplierRepository.findById(supplierId);
-
-        return supplierData.map(supplier -> new ResponseEntity<>(supplier, HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public Optional<SupplierEntity> getSupplierById(@PathVariable("supplierId") int supplierId) {
+        Optional<SupplierEntity> supplierData = supplierRepository.findById(supplierId);
+        if (supplierData.isEmpty()){
+            throw new ResourceNotFoundException("Supplier not found");
+        }
+        return supplierData;
     }
 
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
-    public ResponseEntity<Supplier> createSupplier(@RequestBody Supplier supplier) {
+    public SupplierEntity createSupplier(@RequestBody SupplierEntity supplierEntity) {
         try {
-            Supplier newSupplier = supplierRepository
-                    .save(new Supplier(supplier.getSupplierName(), supplier.getPhone()));
-            return new ResponseEntity<>(newSupplier, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            return supplierRepository
+                    .save(new SupplierEntity(supplierEntity.getSupplierName(), supplierEntity.getPhone()));
+        } catch (InternalServerErrorException e) {
+            throw new InternalServerErrorException("Could not create supplier");
         }
     }
 
     @PutMapping("/{supplierId}")
-    public ResponseEntity<Supplier> updateSupplier(@PathVariable("supplierId") int supplierId, @RequestBody Supplier updatedSupplier) {
-        Optional<Supplier> supplierData = supplierRepository.findById(supplierId);
+    public SupplierEntity updateSupplier(@PathVariable("supplierId") int supplierId, @RequestBody SupplierEntity updatedSupplierEntity) {
+        Optional<SupplierEntity> supplierData = supplierRepository.findById(supplierId);
 
         if (supplierData.isPresent()) {
-            Supplier supplier = supplierData.get();
-            supplier.setSupplierName(updatedSupplier.getSupplierName());
-            supplier.setPhone(updatedSupplier.getPhone());
-            return new ResponseEntity<>(supplierRepository.save(supplier), HttpStatus.OK);
+            SupplierEntity supplierEntity = supplierData.get();
+            supplierEntity.setSupplierName(updatedSupplierEntity.getSupplierName());
+            supplierEntity.setPhone(updatedSupplierEntity.getPhone());
+            supplierRepository.save(supplierEntity);
+            return supplierEntity;
         } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            throw new ResourceNotFoundException("Supplier not found");
         }
     }
 
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{supplierId}")
-    public ResponseEntity<HttpStatus> deleteSupplier(@PathVariable("supplierId") int supplierId) {
+    public void deleteSupplier(@PathVariable("supplierId") int supplierId) {
         try {
             supplierRepository.deleteById(supplierId);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new InternalServerErrorException("Could not delete supplier");
         }
     }
 }

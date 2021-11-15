@@ -1,7 +1,6 @@
 package com.springjpa.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -18,7 +17,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "product")
-public class Product {
+public class ProductEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "product_id", updatable = false, nullable = false)
@@ -29,7 +28,7 @@ public class Product {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "supplier_id")
-    private Supplier supplier;
+    private SupplierEntity supplierEntity;
 
     @Column(name = "unit_price")
     private BigDecimal unitPrice;
@@ -39,14 +38,14 @@ public class Product {
 
     @ManyToMany (mappedBy = "orderProducts")
     @JsonIgnoreProperties("orderProducts")
-    Set<Order> orders;
+    Set<OrderEntity> orders;
 
-    public Product() {
+    public ProductEntity() {
     }
 
-    public Product(String productName, Supplier supplier, BigDecimal unitPrice, boolean isDiscontinued) {
+    public ProductEntity(String productName, SupplierEntity supplierEntity, BigDecimal unitPrice, boolean isDiscontinued) {
         this.productName = productName;
-        this.supplier = supplier;
+        this.supplierEntity = supplierEntity;
         this.unitPrice = unitPrice;
         this.isDiscontinued = isDiscontinued;
     }
@@ -67,12 +66,12 @@ public class Product {
         this.productName = productName;
     }
 
-    public Supplier getSupplier() {
-        return supplier;
+    public SupplierEntity getSupplier() {
+        return supplierEntity;
     }
 
-    public void setSupplier(Supplier supplier) {
-        this.supplier = supplier;
+    public void setSupplier(SupplierEntity supplierEntity) {
+        this.supplierEntity = supplierEntity;
     }
 
     public BigDecimal getUnitPrice() {
@@ -91,12 +90,12 @@ public class Product {
         isDiscontinued = discontinued;
     }
 
-    public Set<Order> getOrders() {
+    public Set<OrderEntity> getOrders() {
         return orders;
     }
 
-    public void setOrders(Set<Order> orders) {
-        this.orders = orders;
+    public void setOrders(Set<OrderEntity> orderEntities) {
+        this.orders = orderEntities;
     }
 
     @Override
@@ -104,7 +103,7 @@ public class Product {
         return "Product {" +
                 "productId = " + productId +
                 ", productName = '" + productName + '\'' +
-                ", supplier = " + supplier +
+                ", supplier = " + supplierEntity +
                 ", unitPrice = " + unitPrice +
                 ", isDiscontinued = " + isDiscontinued +
                 '}';

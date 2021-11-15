@@ -21,7 +21,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "order")
-public class Order {
+public class OrderEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_id", updatable = false, nullable = false)
@@ -32,7 +32,7 @@ public class Order {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id")
-    private Customer customer;
+    private CustomerEntity customerEntity;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "order_date")
@@ -46,17 +46,17 @@ public class Order {
             joinColumns = @JoinColumn(name = "order_id"),
             inverseJoinColumns = @JoinColumn(name = "product_id"))
     @JsonIgnoreProperties("orders")
-    Set<Product> orderProducts;
+    Set<ProductEntity> orderProducts;
 
-    public Order() {
+    public OrderEntity() {
     }
 
-    public Order(String orderNumber, Customer customer, Date orderDate, BigDecimal totalAmount, Set<Product> orderProducts) {
+    public OrderEntity(String orderNumber, CustomerEntity customerEntity, Date orderDate, BigDecimal totalAmount, Set<ProductEntity> orderProductEntities) {
         this.orderNumber = orderNumber;
-        this.customer = customer;
+        this.customerEntity = customerEntity;
         this.orderDate = orderDate;
         this.totalAmount = totalAmount;
-        this.orderProducts = orderProducts;
+        this.orderProducts = orderProductEntities;
     }
 
     public int getOrderId() {
@@ -75,12 +75,12 @@ public class Order {
         this.orderNumber = orderNumber;
     }
 
-    public Customer getCustomer() {
-        return customer;
+    public CustomerEntity getCustomer() {
+        return customerEntity;
     }
 
-    public void setCustomer(Customer customer) {
-        this.customer = customer;
+    public void setCustomer(CustomerEntity customerEntity) {
+        this.customerEntity = customerEntity;
     }
 
     public Date getOrderDate() {
@@ -99,12 +99,12 @@ public class Order {
         this.totalAmount = totalAmount;
     }
 
-    public Set<Product> getOrderProducts() {
+    public Set<ProductEntity> getOrderProducts() {
         return orderProducts;
     }
 
-    public void setOrderProducts(Set<Product> orderProducts) {
-        this.orderProducts = orderProducts;
+    public void setOrderProducts(Set<ProductEntity> orderProductEntities) {
+        this.orderProducts = orderProductEntities;
     }
 
     @Override
@@ -112,7 +112,7 @@ public class Order {
         return "Order {" +
                 "orderId = " + orderId +
                 ", orderNumber = '" + orderNumber + '\'' +
-                ", customer = " + customer +
+                ", customer = " + customerEntity +
                 ", orderDate = " + orderDate +
                 ", totalAmount = " + totalAmount +
                 '}';

@@ -27,4 +27,12 @@ public class ControllerAdvisor {
         body.put("message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Object> handleOtherException(Exception ex) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }
